@@ -11,14 +11,47 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('organizations', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('domain')->nullable();
+            $table->string('logo')->nullable();
+            $table->string('phone', 50)->nullable();
+            $table->string('email')->nullable();
+            $table->string('currency', 3)->default('USD');
+            $table->string('timezone', 100)->default('UTC');
+            $table->unsignedTinyInteger('fiscal_year_start')->default(1);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('phone', 50)->nullable();
+            $table->string('title', 100)->nullable();
+            $table->string('avatar')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_super_admin')->default(false);
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('organization_user', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('organization_id')->constrained('organizations')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->boolean('is_default')->default(false);
+            $table->timestamps();
+
+            $table->unique(['organization_id', 'user_id']);
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -42,8 +75,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('organization_user');
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('organizations');
     }
 };
